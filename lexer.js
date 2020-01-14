@@ -1,3 +1,4 @@
+// tokenType was created to prevent any spelling mistakes that could occurr during the coding process
 const tokenType = {
     startParentheses: "startParentheses",
     endParentheses: "endParentheses",
@@ -7,7 +8,8 @@ const tokenType = {
     or: "or",
     conditional: "conditional",
     biconditional: "biconditional",
-    endOfInput: "endOfInput"
+    endOfInput: "endOfInput",
+    error: "error"
 }
 
 class Token {
@@ -37,28 +39,18 @@ class Lexer {
 
     tokenize() {
         let tokens = [];
-        let parensChecker = [];
+        
         let token = this.nextToken();
 
-        while (token.type !== tokenType.endOfInput && token != "error") {
+        while (token.type !== tokenType.endOfInput && token.type !== tokenType.error) {
             tokens.push(token);
-            if (token.type == tokenType.startParentheses) {
-                parensChecker.push(token);
-            }
-            
-            if (token.type == tokenType.endParentheses) {
-                if (parensChecker.length == 0) {
-                    return "error";
-                }
-                parensChecker.pop();
-            }
-
             token = this.nextToken();
         }
 
-        if (token == "error" || parensChecker.length != 0) {
-            return "error";
+        if (token.type === tokenType.error) {
+            return [];
         }
+
         return tokens;
     }
 
@@ -69,7 +61,7 @@ class Lexer {
         
         let char = this.input.charAt(this.position);
         let nextChar = '';
-        if (this.position < this.input.length) {
+        if (this.position + 1 < this.input.length) {
             nextChar = this.input.charAt(this.position + 1);
         }
 
@@ -116,18 +108,26 @@ class Lexer {
             }
         }
 
+        if (char == "-" && nextChar == ">") {
+            this.position += 2;
+            return new Token(tokenType.conditional, "->");
+        }
+
+        if (char == "<" && nextChar == "-") {
+            if (this.position + 2 < this.input.length) {
+                if (this.input[this.position + 2] == ">") {
+                    this.position += 3;
+                    return new Token(tokenType.biconditional, "<->");
+                }
+            }
+        }
+
         if (char == ' ') {
             this.position += 1;
             return this.nextToken();
         }
 
-        return "error";
+        return new Token(tokenType.error, "error");
 
     }
 }
-
-
-let test = new Lexer("(p && q)");
-let tokens = test.tokenize();
-
-console.log(tokens);
